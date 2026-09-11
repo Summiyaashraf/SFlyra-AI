@@ -3,12 +3,18 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Bot,
+  CalendarDays,
+  Check,
   Code2,
   Instagram,
   Mail,
+  Megaphone,
+  MessageSquareText,
+  Palette,
+  PenLine,
   Sparkle,
+  TrendingUp,
   Workflow,
-  Check,
 } from "lucide-react";
 
 import logoAsset from "@/assets/sflyra-logo.jpg.asset.json";
@@ -174,25 +180,64 @@ const SERVICES = [
   {
     icon: Code2,
     title: "Web Development",
-    desc: "Fast, elegant, conversion-focused websites and web apps engineered from the ground up.",
-    tags: ["React", "Next-gen UI", "Performance"],
+    desc: "We design and build fast, modern websites and online stores that turn visitors into customers.",
+  },
+  {
+    icon: Palette,
+    title: "Graphic Designing",
+    desc: "From logos to full brand kits, we create visuals that make your business instantly recognizable.",
   },
   {
     icon: Bot,
     title: "AI Automation",
-    desc: "We remove the repetitive work — AI pipelines that handle it quietly in the background.",
-    tags: ["LLM ops", "Integrations", "Chatbots"],
+    desc: "We replace manual, repetitive tasks with smart systems that run your operations on autopilot.",
   },
   {
     icon: Workflow,
     title: "Agentic Workflows",
-    desc: "Autonomous agents that plan, decide and execute across your tools end to end.",
-    tags: ["Multi-agent", "Tooling", "Orchestration"],
+    desc: "We build multi-step AI agents that research, decide, and take action across your business tools.",
+  },
+  {
+    icon: MessageSquareText,
+    title: "AI Chatbot Development",
+    desc: "We create custom AI chatbots that handle customer questions and capture leads, 24/7.",
+  },
+  {
+    icon: Megaphone,
+    title: "Digital Marketing",
+    desc: "We manage your social presence and campaigns so your brand grows while you focus on your business.",
+  },
+];
+
+const PRODUCTS = [
+  {
+    icon: Bot,
+    title: "AI Chatbot",
+    desc: "A ready-made chatbot for your website or Instagram DMs that answers questions and books leads instantly.",
+    tag: "Ready to deploy",
+  },
+  {
+    icon: Mail,
+    title: "Email/WhatsApp Automation",
+    desc: "Automatic replies, order confirmations, and follow-up sequences that keep customers engaged without lifting a finger.",
+    tag: "Powered by SFlyra Labs",
+  },
+  {
+    icon: CalendarDays,
+    title: "Social Media Auto-Poster",
+    desc: "Schedule and auto-generate captions for your posts across Instagram, Facebook, and LinkedIn.",
+    tag: "Ready to deploy",
+  },
+  {
+    icon: PenLine,
+    title: "AI Content Writer",
+    desc: "Generate on-brand blog posts, captions, and product descriptions in seconds.",
+    tag: "Powered by SFlyra Labs",
   },
 ];
 
 const STATS = [
-  "3 disciplines",
+  "6 services",
   "1 team",
   "4-step process",
   "SFlyra AI — our own product",
@@ -270,12 +315,12 @@ function Index() {
 
         {/* Services */}
         <section id="services" className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-32">
-          <SectionTitle eyebrow="Services" title="Three disciplines, one intelligent stack." />
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
+          <SectionTitle eyebrow="What We Do" title="Custom work, built around how your business actually runs." />
+          <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((s) => (
               <article
                 key={s.title}
-                className="group glass-panel relative overflow-hidden rounded-3xl p-8 transition-transform duration-300 hover:-translate-y-1"
+                className="group glass-panel relative overflow-hidden rounded-3xl p-8 transition-all duration-300 hover:-translate-y-1 glow-soft hover:glow-strong"
               >
                 <div className="absolute inset-0 bg-[image:var(--gradient-panel)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <div className="relative">
@@ -284,16 +329,6 @@ function Index() {
                   </span>
                   <h3 className="mt-6 font-display text-2xl font-semibold">{s.title}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
-                  <ul className="mt-6 flex flex-wrap gap-2">
-                    {s.tags.map((t) => (
-                      <li
-                        key={t}
-                        className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
-                      >
-                        {t}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               </article>
             ))}
@@ -302,34 +337,38 @@ function Index() {
 
         {/* Product spotlight */}
         <section id="product" className="relative border-y border-border/60 bg-card/20">
-          <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 py-24 lg:grid-cols-2 lg:px-8 lg:py-32">
-            <div>
-              <span className="rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-xs text-highlight">
-                Powered by SFlyra Labs
-              </span>
-              <h2 className="mt-6 font-display text-3xl leading-tight font-semibold sm:text-5xl">
-                SFlyra AI — readymade intelligence for your business.
-              </h2>
-              <ul className="mt-8 space-y-4">
-                {[
-                  "A growing line of readymade AI tools, no setup headaches.",
-                  "Automations that plug into the tools your team already uses.",
-                  "Agentic assistants trained on your own knowledge base.",
-                  "Built, maintained and supported in-house by SFlyra Labs.",
-                ].map((f) => (
-                  <li key={f} className="flex gap-3 text-sm text-muted-foreground">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-9">
-                <PrimaryButton href="#contact">
-                  Get early access <ArrowRight className="h-4 w-4" />
-                </PrimaryButton>
-              </div>
+          <div className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-32">
+            <SectionTitle eyebrow="SFlyra AI" title="Intelligence, Ready to Use" />
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Pre-built AI tools you can deploy in days, not months — powered by SFlyra Labs.
+            </p>
+            <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {PRODUCTS.map((p) => (
+                <article
+                  key={p.title}
+                  className="group relative overflow-hidden rounded-3xl border border-primary/15 bg-card/40 p-7 transition-all duration-300 hover:-translate-y-1 glow-soft hover:glow-strong"
+                >
+                  <div className="absolute inset-0 bg-[image:var(--gradient-panel)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="relative">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="grid h-11 w-11 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
+                        <p.icon className="h-5 w-5" />
+                      </span>
+                      <span className="rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-highlight">
+                        {p.tag}
+                      </span>
+                    </div>
+                    <h3 className="mt-6 font-display text-xl font-semibold">{p.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.desc}</p>
+                  </div>
+                </article>
+              ))}
             </div>
-            <LogoPanel />
+            <div className="mt-12 flex justify-center">
+              <PrimaryButton href="#contact">
+                Get early access <ArrowRight className="h-4 w-4" />
+              </PrimaryButton>
+            </div>
           </div>
         </section>
 
