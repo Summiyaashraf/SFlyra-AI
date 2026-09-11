@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Star = {
   left: string;
@@ -16,18 +16,23 @@ function seeded(i: number, salt: number) {
 
 /** Drifting, twinkling starfield used behind the whole page. */
 export function Sparkles({ count = 70 }: { count?: number }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const stars = useMemo<Star[]>(
     () =>
       Array.from({ length: count }, (_, i) => ({
-        left: `${seeded(i, 1) * 100}%`,
-        top: `${seeded(i, 2) * 100}%`,
-        size: 1 + seeded(i, 3) * 2.4,
-        delay: `${seeded(i, 4) * 6}s`,
-        duration: `${3 + seeded(i, 5) * 5}s`,
-        opacity: 0.3 + seeded(i, 6) * 0.7,
+        left: `${(seeded(i, 1) * 100).toFixed(3)}%`,
+        top: `${(seeded(i, 2) * 100).toFixed(3)}%`,
+        size: Number((1 + seeded(i, 3) * 2.4).toFixed(2)),
+        delay: `${(seeded(i, 4) * 6).toFixed(2)}s`,
+        duration: `${(3 + seeded(i, 5) * 5).toFixed(2)}s`,
+        opacity: Number((0.3 + seeded(i, 6) * 0.7).toFixed(2)),
       })),
     [count],
   );
+
+  if (!mounted) return null;
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
