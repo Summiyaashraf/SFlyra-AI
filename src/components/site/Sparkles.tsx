@@ -62,20 +62,25 @@ export function Sparkles({ count = 70 }: { count?: number }) {
 
 /** One-time radial sparkle burst, rendered around the hero logo on load. */
 export function SparkleBurst({ count = 22 }: { count?: number }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const shards = useMemo(
     () =>
       Array.from({ length: count }, (_, i) => {
         const angle = (i / count) * Math.PI * 2;
         const dist = 130 + seeded(i, 9) * 110;
         return {
-          bx: `${Math.cos(angle) * dist}px`,
-          by: `${Math.sin(angle) * dist}px`,
-          delay: `${seeded(i, 11) * 0.35}s`,
-          size: 3 + seeded(i, 12) * 4,
+          bx: `${(Math.cos(angle) * dist).toFixed(2)}px`,
+          by: `${(Math.sin(angle) * dist).toFixed(2)}px`,
+          delay: `${(seeded(i, 11) * 0.35).toFixed(2)}s`,
+          size: Number((3 + seeded(i, 12) * 4).toFixed(2)),
         };
       }),
     [count],
   );
+
+  if (!mounted) return null;
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
