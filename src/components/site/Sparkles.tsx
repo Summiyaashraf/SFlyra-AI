@@ -56,6 +56,10 @@ export function Sparkles({ count = 70 }: { count?: number }) {
       </div>
       <div className="absolute -top-40 left-1/2 h-[38rem] w-[38rem] -translate-x-1/2 rounded-full bg-primary/10 blur-[140px] animate-pulse-glow" />
       <div className="absolute bottom-0 right-0 h-[30rem] w-[30rem] rounded-full bg-secondary/10 blur-[150px] animate-pulse-glow" />
+      {/* Ambient floating gradient orbs — electric cyan, deep blue, dark emerald */}
+      <div className="absolute top-[8%] -left-44 h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle_at_30%_30%,#0066ff_0%,#2553ec_45%,transparent_70%)] opacity-25 blur-[110px] animate-drift" />
+      <div className="absolute top-[40%] -right-48 h-[38rem] w-[38rem] rounded-full bg-[radial-gradient(circle_at_70%_30%,#22d3ee_0%,#0ea5e9_50%,transparent_75%)] opacity-20 blur-[120px] animate-drift" />
+      <div className="absolute bottom-[-12rem] left-[18%] h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle_at_50%_60%,#0f766e_0%,#134e4a_55%,transparent_78%)] opacity-25 blur-[120px] animate-float-slow" />
     </div>
   );
 }

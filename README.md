@@ -1,14 +1,14 @@
-# SFlyra Labs Launchpad
+﻿# SFlyra Labs Launchpad
 
 mein apni ek agency bnarhi ho toh usky lye ek frontend web bnvaba chahti ho tmsy 
 
-Build a premium, dark-themed website for my digital agency, SFlyra Labs.
+Build a premium website for my digital agency, SFlyra Labs.
 
 BRAND:
 
 - Agency name: SFlyra Labs (tagline: "Building Intelligence. Fusing Ideas.")
 
-- Product name: SFlyra AI (readymade AI tools line)
+- Product name: SFlyra (readymade AI tools line)
 
 - Color palette: deep black background (#05070C) with sky-blue accents (#38BDF8 primary, #5FA8D3 secondary, #7DD3FC highlight), off-white text (#EAF2FB), muted blue-grey for secondary text (#8B96A8)
 
@@ -18,15 +18,15 @@ BRAND:
 
 SECTIONS (in this order):
 
-1. Navbar — logo + wordmark on the left, nav links (Services, SFlyra AI, Work, Team, Contact) on the right, with a pill-shaped CTA button "Start a project". Transparent at top, turns solid/blurred on scroll.
+1. Navbar — logo + wordmark on the left, nav links (Services, SFlyra, Work, Team, Contact) on the right, with a pill-shaped CTA button "Start a project". Transparent at top, turns solid/blurred on scroll.
 
-2. Hero — Large bold headline about building intelligence and fusing ideas into every process. Short subheading about our services (web development, AI automation, agentic workflows). Two CTA buttons: "Start a project" (primary gradient button) and "Explore SFlyra AI" (ghost button). On the right side, showcase our logo in a glowing circular/rounded panel with subtle spinning ring accents around it.
+2. Hero — Large bold headline about building intelligence and fusing ideas into every process. Short subheading about our services (web development, AI automation, agentic workflows). Two CTA buttons: "Start a project" (primary gradient button) and "Explore SFlyra" (ghost button). On the right side, showcase our logo in a glowing circular/rounded panel with subtle spinning ring accents around it.
 
-3. Stats strip — a thin horizontal row with quick credibility stats: "3 disciplines", "1 team", "4-step process", "SFlyra AI — our own product".
+3. Stats strip — a thin horizontal row with quick credibility stats: "3 disciplines", "1 team", "4-step process", "SFlyra — our own product".
 
 4. Services section — 3 highlighted cards (not plain text) for: Web Development, AI Automation, and Agentic Workflows. Each card has an icon, title, short description, and small tag pills underneath.
 
-5. Product spotlight — a distinct section for SFlyra AI with a "Powered by SFlyra Labs" tag, headline, a feature bullet list, and a CTA button "Get early access". Include a visual panel with the logo and decorative rings.
+5. Product spotlight — a distinct section for SFlyra with a "Powered by SFlyra Labs" tag, headline, a feature bullet list, and a CTA button "Get early access". Include a visual panel with the logo and decorative rings.
 
 6. Portfolio/Work section — a 3-card grid for future case studies (use "Case study coming soon" placeholders for now).
 
@@ -40,7 +40,7 @@ SECTIONS (in this order):
 
 11. Footer — logo, tagline, copyright.
 
-Make it fully responsive, smooth scroll, and make sure the logo (I'll upload it) is the visual centerpiece of the hero section, clearly visible against the dark background.
+Make it fully responsive, smooth scroll, and make sure the logo (I'll upload it) is the visual centerpiece of the hero section, clearly visible against the background.
 
 This project was built with [Lovable](https://lovable.dev).
 
@@ -56,11 +56,11 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Prefer working locally? You need Node.js and pnpm — [install nvm](https://github.com/nvm-sh/nvm#installing-and-updating) then `corepack enable && corepack prepare pnpm@latest --activate`.
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+pnpm i
+pnpm run dev
 ```

@@ -99,6 +99,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Sora:wght@300;400;500;600;700&display=swap",
       },
     ],
+    scripts: [
+      {
+        children: `(function(){try{var s=localStorage.getItem("sflyra-theme");var d=s? s==="dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;window.__sflyraTheme=d?"dark":"light";if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

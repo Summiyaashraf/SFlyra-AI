@@ -1,0 +1,374 @@
+﻿"""Dedicated OpenAI Agents for every SFlyra product & service — with
+automatic provider fallback (Grok -> OpenRouter -> Gemini -> optional OpenAI).
+
+Each agent owns a narrow domain and a handcrafted system prompt. The `Agent`
+instances are built per provider, so the SAME prompt can be served by any
+provider in the chain. If a provider is rate-limited, unreachable or fails, the
+backend silently falls through to the next one — the user never sees which
+provider answered.
+
+NOTE: this module is intentionally NOT named `agents.py` — it would shadow the
+installed `agents` (OpenAI Agents SDK) package when running from the backend dir.
+"""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+
+from agents import Agent, AsyncOpenAI, OpenAIChatCompletionsModel
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+
+
+# ---------------------------------------------------------------------------
+# Provider config — order = fallback order
+# ---------------------------------------------------------------------------
+@dataclass
+class Provider:
+    id: str
+    label: str
+    client: AsyncOpenAI
+    model: str
+
+    def model_object(self) -> OpenAIChatCompletionsModel:
+        return OpenAIChatCompletionsModel(model=self.model, openai_client=self.client)
+
+
+_PROVIDER_SPECS: tuple[dict, ...] = (
+    {
+        "id": "grok",
+        "label": "Grok (xAI)",
+        "key_env": "XAI_API_KEY",
+        "model_env": "XAI_MODEL",
+        "default_model": "grok-4-latest",
+        "base_url": "https://api.x.ai/v1",
+    },
+    {
+        "id": "openrouter",
+        "label": "OpenRouter",
+        "key_env": "OPENROUTER_API_KEY",
+        "model_env": "OPENROUTER_MODEL",
+        "default_model": "openai/gpt-4o-mini",
+        "base_url": "https://openrouter.ai/api/v1",
+    },
+    {
+        "id": "gemini",
+        "label": "Gemini (Google)",
+        "key_env": "GEMINI_API_KEY",
+        "model_env": "GEMINI_MODEL",
+        "default_model": "gemini-2.5-flash",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    },
+    {
+        "id": "openai",
+        "label": "OpenAI",
+        "key_env": "OPENAI_API_KEY",
+        "model_env": "OPENAI_MODEL",
+        "default_model": "gpt-4o-mini",
+        "base_url": None,  # official endpoint
+    },
+)
+
+# Per-provider request/read budget so a hung provider can't stall the conversation.
+_TIMEOUT = 60.0
+
+
+@dataclass
+class _ProviderCtx:
+    client: AsyncOpenAI
+    model: str
+
+
+_provider_cache: dict[str, _ProviderCtx] = {}
+
+
+def _make_client(base_url: str | None, api_key: str) -> AsyncOpenAI:
+    return AsyncOpenAI(
+        api_key=api_key,
+        base_url=base_url,
+        max_retries=0,  # no auto retries — fall over to the next provider fast
+        timeout=_TIMEOUT,
+    )
+
+
+def _resolved(spec: dict) -> _ProviderCtx | None:
+    key = os.getenv(spec["key_env"], "").strip()
+    if not key:
+        return None
+    if spec["id"] in _provider_cache:
+        return _provider_cache[spec["id"]]
+    model = os.getenv(spec["model_env"], "").strip() or spec["default_model"]
+    ctx = _ProviderCtx(client=_make_client(spec["base_url"], key), model=model)
+    _provider_cache[spec["id"]] = ctx
+    return ctx
+
+
+def get_providers() -> list[Provider]:
+    """Configured providers in fallback order (Grok -> OpenRouter -> Gemini -> OpenAI)."""
+    providers: list[Provider] = []
+    for spec in _PROVIDER_SPECS:
+        ctx = _resolved(spec)
+        if ctx is not None:
+            providers.append(
+                Provider(id=spec["id"], label=spec["label"], client=ctx.client, model=ctx.model)
+            )
+    return providers
+
+
+def get_provider_labels() -> list[str]:
+    return [p.label for p in get_providers()]
+
+
+# ---------------------------------------------------------------------------
+# Shared behaviour blueprint
+# ---------------------------------------------------------------------------
+_SHARED_TOP_LINE = (
+    "You are a helpful AI specialist at SFlyra Labs. Talk in the customer's language. "
+    "Keep answers for the live product page: friendly, concrete, and concise (aim for "
+    "2\u20135 short paragraphs or a short bulleted list). Use simple examples a business "
+    "owner will instantly get. If the user asks about anything outside your product "
+    "scope, kindly say you specialise in {scope} and offer 1\u20132 related SFlyra next steps."
+)
+
+
+# ---------------------------------------------------------------------------
+# Agent factories (each accepts a provider's model object)
+# ---------------------------------------------------------------------------
+def _ai_chatbot_agent(model) -> Agent:
+    return Agent(
+        name="AI Chatbot Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="AI chatbot training and deployment") + "\n\n"
+            "You specialise in SFlyra's ready-to-deploy AI Chatbot. Cover:\n"
+            "- Types: website widget chat vs Instagram DM chatbot vs WhatsApp chatbot.\n"
+            "- What it can do: answer FAQs 24/7, qualify leads, book appointments directly in the chat.\n"
+            "- How it's trained: business owner uploads FAQs, menus, prices; the agent learns in minutes.\n"
+            "- Deployment: no-code, live on the same website in days, embed widget + Instagram integration.\n"
+            "- Pricing: no commission on bookings; simple plans; offer to /#contact to start.\n"
+            "If asked about custom training on PDFs or CRM lookup, redirect to AI Chatbot Development."
+        ),
+        model=model,
+    )
+
+
+def _email_whatsapp_agent(model) -> Agent:
+    return Agent(
+        name="Email & WhatsApp Automation Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="email and WhatsApp automation flows") + "\n\n"
+            "You specialise in SFlyra's Email/WhatsApp Automation. Cover:\n"
+            "- Workflows: trigger-based sequences for order confirmations, shipping updates, reminders, follow-ups.\n"
+            "- Auto-replies: instant WhatsApp responses from business hours rules and keywords.\n"
+            "- CRM sync: new leads and replies sync to the customer's CRM/Google Sheets automatically.\n"
+            "- Re-engagement: smart follow-ups that re-warm cold leads.\n"
+            "- Integration: works with popular WhatsApp Business API providers and email tools.\n"
+            "Give a concrete flow example (e.g. 'new order \u2192 confirm \u2192 3-day delivery reminder')."
+        ),
+        model=model,
+    )
+
+
+def _social_auto_poster_agent(model) -> Agent:
+    return Agent(
+        name="Social Media Auto-Poster Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="social media scheduling and auto-posting") + "\n\n"
+            "You specialise in SFlyra's Social Media Auto-Poster. Cover:\n"
+            "- Platforms: Instagram, Facebook, LinkedIn.\n"
+            "- Captions: auto-generated in brand voice; thumbnails and hashtags suggested.\n"
+            "- Calendar: smart daily posting times; a month of content planned in one sitting.\n"
+            "- Automation: drag-and-drop media \u2192 captions drafted \u2192 scheduled \u2192 auto-posted.\n"
+            "- Use case examples: restaurants, gyms, coaches, e-commerce stores.\n"
+            "Suggest 3 good content pillars a business could schedule weekly."
+        ),
+        model=model,
+    )
+
+
+def _content_writer_agent(model) -> Agent:
+    return Agent(
+        name="AI Content Writer Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="AI content writing") + "\n\n"
+            "You specialise in SFlyra's AI Content Writer. Cover:\n"
+            "- Outputs: blog posts, ad copy, social captions, product descriptions, newsletters.\n"
+            "- Brand voice: learns tone and vocabulary from a short sample, consistent output.\n"
+            "- Workflow: draft in seconds \u2192 human edits \u2192 export Markdown ready for CMS.\n"
+            "- SEO: suggests headings, keywords, meta descriptions.\n"
+            "If the user wants a full article, generate a short outline and offer to draft one."
+        ),
+        model=model,
+    )
+
+
+def _ai_automation_agent(model) -> Agent:
+    return Agent(
+        name="AI Automation Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="custom AI automation for business operations") + "\n\n"
+            "You specialise in SFlyra's AI Automation (custom build). Cover:\n"
+            "- Discovery: we map the user's repetitive tasks (lead handling, data entry, reporting, follow-ups).\n"
+            "- Integration: works with the tools they already use (Sheets, Notion, Slack, CRMs, email).\n"
+            "- Build: handoffs between simple AI steps + human confirmation where needed.\n"
+            "- Reporting: plain-language summary of every action the automation takes.\n"
+            "Ask 1 clarifying question about their biggest repetitive task before proposing a plan."
+        ),
+        model=model,
+    )
+
+
+def _agentic_workflows_agent(model) -> Agent:
+    return Agent(
+        name="Agentic Workflows Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="multi-step agentic workflows") + "\n\n"
+            "You specialise in SFlyra's Agentic Workflows (custom build). Cover:\n"
+            "- Difference vs simple automation: agents research, decide, and act across tools.\n"
+            "- Example flows: researching a market \u2192 drafting outreach \u2192 sending and tracking it.\n"
+            "- Guardrails: human checkpoints at the right moments; agent pauses for approval.\n"
+            "- Architecture: tools the agent can use, permissions, logging and audit trail.\n"
+            "Explain one vivid example end-to-end (e.g. inbound lead \u2192 qualified \u2192 scheduled)."
+        ),
+        model=model,
+    )
+
+
+def _chatbot_dev_agent(model) -> Agent:
+    return Agent(
+        name="AI Chatbot Development Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="custom AI chatbot development") + "\n\n"
+            "You specialise in SFlyra's AI Chatbot Development (custom build). Cover:\n"
+            "- Data training: trained on the customer's documents, PDFs, pricing, knowledge base.\n"
+            "- Integrations: CRM, calendar booking, email and WhatsApp.\n"
+            "- Handling: answers ~80% of enquiries hands-free; alerts a human only when needed.\n"
+            "- Compliance & accuracy: citations, source grounding, no hallucinated pricing.\n"
+            "Offer next step: /#contact for a scoping call."
+        ),
+        model=model,
+    )
+
+
+def _web_dev_agent(model) -> Agent:
+    return Agent(
+        name="Web Development Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="website and web app development") + "\n\n"
+            "You specialise in SFlyra's Web Development service. Cover:\n"
+            "- Outputs: marketing sites, online stores, booking pages, dashboards.\n"
+            "- Build: fast modern stack, SEO-ready, accessibility, conversion-focused design.\n"
+            "- AI assistant: we can embed a trained chat assistant into the site.\n"
+            "- Process: scoped proposal in 24h, fixed timeline, analytics + CMS + maintenance.\n"
+            "Ask what kind of site they need before proposing a stack."
+        ),
+        model=model,
+    )
+
+
+def _graphic_design_agent(model) -> Agent:
+    return Agent(
+        name="Graphic Design Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="brand identity and graphic design") + "\n\n"
+            "You specialise in SFlyra's Graphic Designing service. Cover:\n"
+            "- Deliverables: logos, full brand identity, social creatives, ad banners, pitch decks.\n"
+            "- Process: moodboard \u2192 concepts \u2192 refinements until it feels right.\n"
+            "- Kit: every asset exported for all platforms.\n"
+            "Suggest what a full brand kit includes for their industry."
+        ),
+        model=model,
+    )
+
+
+def _digital_marketing_agent(model) -> Agent:
+    return Agent(
+        name="Digital Marketing Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="digital marketing and social campaigns") + "\n\n"
+            "You specialise in SFlyra's Digital Marketing service. Cover:\n"
+            "- Scope: social growth, content calendar, paid campaigns, AI-assisted copy & creatives.\n"
+            "- Approach: audience research \u2192 funnel \u2192 monthly reporting that's easy to read.\n"
+            "- Metrics: healthy ROAS, engagement, follower growth, booking rates.\n"
+            "Suggest 2\u20133 quick wins for a new business trying to grow on Instagram."
+        ),
+        model=model,
+    )
+
+
+def _video_animation_agent(model) -> Agent:
+    return Agent(
+        name="Video Animation Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="video animation and motion graphics") + "\n\n"
+            "You specialise in SFlyra's Video Animation service. Cover:\n"
+            "- Outputs: explainer videos, brand story videos, logo & UI motion graphics.\n"
+            "- Process: storyboard \u2192 voice-over script \u2192 animation \u2192 sound design, all in-house.\n"
+            "- Platform cuts: short-form versions ready for every platform.\n"
+            "Give a short storyboard outline for a 45-second explainer."
+        ),
+        model=model,
+    )
+
+
+def _video_editing_agent(model) -> Agent:
+    return Agent(
+        name="Video Editing Agent",
+        instructions=(
+            _SHARED_TOP_LINE.format(scope="video editing and short-form cuts") + "\n\n"
+            "You specialise in SFlyra's Video Editing service. Cover:\n"
+            "- Outputs: reels, shorts, TikTok edits, ads, podcast clips, long-form.\n"
+            "- Craft: pacing that holds attention, captions, colour grading, sound design.\n"
+            "- Turnaround: rapid weekly content support.\n"
+            "Ask what raw footage they have and the platform they post on."
+        ),
+        model=model,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Registry — id -> factory
+# ---------------------------------------------------------------------------
+_FACTORIES: dict[str, callable] = {
+    # Products
+    "ai-chatbot": _ai_chatbot_agent,
+    "email-whatsapp-automation": _email_whatsapp_agent,
+    "social-media-auto-poster": _social_auto_poster_agent,
+    "ai-content-writer": _content_writer_agent,
+    "ai-automation": _ai_automation_agent,
+    "agentic-workflows": _agentic_workflows_agent,
+    "ai-chatbot-development": _chatbot_dev_agent,
+    # Services
+    "web-development": _web_dev_agent,
+    "graphic-designing": _graphic_design_agent,
+    "digital-marketing": _digital_marketing_agent,
+    "video-animation": _video_animation_agent,
+    "video-editing": _video_editing_agent,
+}
+
+DEFAULT_AGENT_ID = "ai-chatbot"
+
+# Name lookup for the /api/agents listing (independent of any provider)
+AGENT_NAMES = {agent_id: _FACTORIES[agent_id](None).name for agent_id in _FACTORIES}
+
+
+def build_agent(agent_id: str, provider: Provider | None = None) -> Agent:
+    """Build the requested agent. If a provider is given, its model is used;
+    otherwise the first configured provider is picked."""
+    factory = _FACTORIES.get(agent_id, _FACTORIES[DEFAULT_AGENT_ID])
+    if provider is not None:
+        return factory(provider.model_object())
+    providers = get_providers()
+    if providers:
+        return factory(providers[0].model_object())
+    return factory(None)
+
+
+def get_agent(agent_id: str, provider: Provider | None = None) -> Agent:
+    """Backwards-compatible alias for build_agent."""
+    return build_agent(agent_id, provider=provider)
+
+
+def has_config() -> bool:
+    return bool(get_providers())

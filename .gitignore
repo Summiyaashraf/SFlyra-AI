@@ -20,6 +20,17 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Env files — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Python (FastAPI backend)
+backend/.venv/
+__pycache__/
+*.pyc
+.venv/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
